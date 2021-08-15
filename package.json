@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"server": "nodemon app --ignore frontend-js --ignore public/",
+		"server": "nodemon db --ignore frontend-js --ignore public/",
 		"client": "webpack --watch",
 		"start": "concurrently \"npm run server\" \"npm run client\""
 	},
