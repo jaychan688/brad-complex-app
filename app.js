@@ -28,7 +28,17 @@ app.use(flash())
 
 // Middle: run this function for every request
 app.use((req, res, next) => {
-	// res.locals avaliable for ejs engine
+	// make all error and success flash messages available from all templates
+	res.locals.errors = req.flash('errors')
+	res.locals.success = req.flash('success')
+
+	// make current user id available on the req object
+	if (req.session.user) {
+		req.visitorId = req.session.user._id
+	} else {
+		req.visitorId = 0
+	}
+	// res.locals make user session data available from within view templates
 	res.locals.user = req.session.user
 	next()
 })

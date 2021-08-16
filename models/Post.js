@@ -3,10 +3,11 @@ const ObjectId = require('mongodb').ObjectId
 const sanitizeHTML = require('sanitize-html')
 const User = require('./User')
 
-const Post = function (data, userId) {
+const Post = function (data, userId, requestedPostId) {
 	this.data = data
-	this.errors = []
 	this.userId = userId
+	this.requestedPostId = requestedPostId
+	this.errors = []
 }
 
 Post.prototype.cleanUp = function () {
@@ -58,6 +59,41 @@ Post.prototype.create = function () {
 	})
 }
 
+Post.prototype.update = function () {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const post = await Post.findSingleById(this.requestedPostId, this.userId)
+
+			if (post.isVisitorOwner) {
+				// actually update the db
+				const status = await this.actuallyUpdate()
+				resolve(status)
+			} else {
+				reject()
+			}
+		} catch {
+			reject()
+		}
+	})
+}
+
+Post.prototype.actuallyUpdate = function () {
+	return new Promise(async (resolve, reject) => {
+		this.cleanUp()
+		this.validate()
+
+		if (!this.errors.length) {
+			await postsCollection.findOneAndUpdate(
+				{ _id: new ObjectId(this.requestedPostId) },
+				{ $set: { title: this.data.title, body: this.data.body } }
+			)
+			resolve('success')
+		} else {
+			resolve('failure')
+		}
+	})
+}
+
 Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 	return new Promise(async (resolve, reject) => {
 		try {
@@ -80,6 +116,8 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 						title: 1,
 						body: 1,
 						createdDate: 1,
+						// add $ sign means actual field in db
+						authorId: '$author',
 						author: { $arrayElemAt: ['$authorDocument', 0] },
 					},
 				},
@@ -91,6 +129,10 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 
 			// clean up author property in each post object
 			posts = posts.map(post => {
+				// return booleans
+				post.isVisitorOwner = post.authorId.equals(visitorId)
+				post.authorId = undefined
+
 				post.author = {
 					username: post.author.username,
 					avatar: new User(post.author, true).avatar,
@@ -106,17 +148,18 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 	})
 }
 
-Post.findSingleById = function (id) {
+Post.findSingleById = function (postId, visitorId) {
 	return new Promise(async (resolve, reject) => {
 		try {
-			if (typeof id != 'string' || !ObjectId.isValid(id)) {
+			if (typeof postId != 'string' || !ObjectId.isValid(postId)) {
 				reject()
 				return
 			}
 
-			const posts = await Post.reusablePostQuery([
-				{ $match: { _id: new ObjectId(id) } },
-			])
+			const posts = await Post.reusablePostQuery(
+				[{ $match: { _id: new ObjectId(postId) } }],
+				visitorId
+			)
 
 			if (posts.length) {
 				// console.log(posts[0])
