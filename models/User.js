@@ -3,9 +3,12 @@ const validator = require('validator')
 const md5 = require('md5')
 const usersCollection = require('../db').db().collection('users')
 
-const User = function (data) {
+const User = function (data, getAvatar = false) {
 	this.data = data
 	this.errors = []
+	if (getAvatar) {
+		this.getAvatar()
+	}
 }
 
 User.prototype.cleanUp = function () {
@@ -86,47 +89,88 @@ User.prototype.validate = function () {
 
 User.prototype.register = function () {
 	return new Promise(async (resolve, reject) => {
-		// Step #1: Validate user data
-		this.cleanUp()
-		await this.validate()
-		// Step #2: Only if there are no validation errors
-		// then save the user data into a database
-		if (!this.errors.length) {
-			// hash user password
-			const salt = bcrypt.genSaltSync(10)
-			this.data.password = bcrypt.hashSync(this.data.password, salt)
-			await usersCollection.insertOne(this.data)
-			this.getAvatar()
-			resolve()
-		} else {
-			reject(this.errors)
+		try {
+			// Step #1: Validate user data
+			this.cleanUp()
+			await this.validate()
+			// Step #2: Only if there are no validation errors
+			// then save the user data into a database
+			if (!this.errors.length) {
+				// hash user password
+				const salt = bcrypt.genSaltSync(10)
+				this.data.password = bcrypt.hashSync(this.data.password, salt)
+				await usersCollection.insertOne(this.data)
+				this.getAvatar()
+				resolve()
+			} else {
+				reject(this.errors)
+			}
+		} catch (error) {
+			console.log(error)
 		}
 	})
 }
 
 User.prototype.login = function () {
 	return new Promise((resolve, reject) => {
-		this.cleanUp()
-		usersCollection
-			.findOne({ username: this.data.username })
-			.then(attemptedUser => {
-				if (
-					attemptedUser &&
-					bcrypt.compareSync(this.data.password, attemptedUser.password)
-				) {
-					this.data = attemptedUser
-					this.getAvatar()
-					resolve('login ok')
-				} else {
-					reject('Invalid username / password.')
-				}
-			})
-			.catch(() => reject('Please try again later.'))
+		try {
+			this.cleanUp()
+			usersCollection
+				.findOne({ username: this.data.username })
+				.then(attemptedUser => {
+					if (
+						attemptedUser &&
+						bcrypt.compareSync(this.data.password, attemptedUser.password)
+					) {
+						this.data = attemptedUser
+						this.getAvatar()
+						resolve('login ok')
+					} else {
+						reject('Invalid username / password.')
+					}
+				})
+				.catch(() => reject('Please try again later.'))
+		} catch (error) {
+			console.log(error)
+		}
 	})
 }
 
 User.prototype.getAvatar = function () {
 	this.avatar = `https://gravatar.com/avatar/${md5(this.data.email)}?s=128`
+}
+
+User.findByUsername = function (username) {
+	return new Promise((resolve, reject) => {
+		try {
+			if (typeof username != 'string') {
+				reject()
+				return
+			}
+
+			usersCollection
+				.findOne({ username })
+				.then(userDoc => {
+					userDoc = new User(userDoc, true)
+					userDoc = {
+						_id: userDoc.data._id,
+						username: userDoc.data.username,
+						avatar: userDoc.avatar,
+					}
+
+					if (userDoc) {
+						resolve(userDoc)
+					} else {
+						reject()
+					}
+				})
+				.catch(() => {
+					reject()
+				})
+		} catch (error) {
+			console.log(error)
+		}
+	})
 }
 
 module.exports = User

@@ -2,9 +2,17 @@ const express = require('express')
 const session = require('express-session')
 const MongoStore = require('connect-mongo')
 const flash = require('connect-flash')
+const dotenv = require('dotenv')
+const morgan = require('morgan')
 const router = require('./router')
 
 const app = express()
+
+dotenv.config()
+// Dev logging middleware
+if (process.env.NODE_ENV === 'development') {
+	app.use(morgan('dev'))
+}
 
 const sessionOption = session({
 	secret: 'random charset',
@@ -18,6 +26,12 @@ const sessionOption = session({
 app.use(sessionOption)
 app.use(flash())
 
+// Middle: run this function for every request
+app.use((req, res, next) => {
+	// res.locals avaliable for ejs engine
+	res.locals.user = req.session.user
+	next()
+})
 // req object have body property
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())

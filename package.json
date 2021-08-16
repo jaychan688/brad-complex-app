@@ -31,8 +31,10 @@
 		"validator": "^13.6.0"
 	},
 	"devDependencies": {
+		"colors": "^1.4.0",
 		"concurrently": "^6.2.1",
 		"dotenv": "^10.0.0",
+		"morgan": "^1.10.0",
 		"nodemon": "^2.0.12"
 	}
 }
