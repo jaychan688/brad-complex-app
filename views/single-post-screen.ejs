@@ -10,7 +10,7 @@
     <span class="pt-2">
       <a href="/post/<%= id %>/edit" class="text-primary mr-2" data-toggle="tooltip" data-placement="top"
         title="Edit"><i class="fas fa-edit"></i></a>
-      <form class="delete-post-form d-inline" action="#" method="POST">
+      <form class="delete-post-form d-inline" action="/post/<%= id %>/delete" method="POST">
         <button class="delete-post-button text-danger" data-toggle="tooltip" data-placement="top" title="Delete"><i
             class="fas fa-trash"></i></button>
       </form>
@@ -25,7 +25,7 @@
     <%= createdDate.getMonth() + 1 %>/<%= createdDate.getDate() %>/<%= createdDate.getFullYear() %></p>
 
   <div class="body-content">
-    <%- body %>
+    <%- filterUserHTML(body) %>
   </div>
 
 </div>

@@ -4,6 +4,9 @@ const MongoStore = require('connect-mongo')
 const flash = require('connect-flash')
 const dotenv = require('dotenv')
 const morgan = require('morgan')
+const sanitizeHTML = require('sanitize-html')
+const markdown = require('marked')
+
 const router = require('./router')
 
 const app = express()
@@ -28,6 +31,30 @@ app.use(flash())
 
 // Middle: run this function for every request
 app.use((req, res, next) => {
+	// make our markdown function available from within ejs templates
+	res.locals.filterUserHTML = content => {
+		return sanitizeHTML(markdown(content), {
+			allowedTags: [
+				'p',
+				'br',
+				'ul',
+				'ol',
+				'li',
+				'strong',
+				'bold',
+				'i',
+				'em',
+				'h1',
+				'h2',
+				'h3',
+				'h4',
+				'h5',
+				'h6',
+			],
+			allowedAttributes: {},
+		})
+	}
+
 	// make all error and success flash messages available from all templates
 	res.locals.errors = req.flash('errors')
 	res.locals.success = req.flash('success')
@@ -42,6 +69,7 @@ app.use((req, res, next) => {
 	res.locals.user = req.session.user
 	next()
 })
+
 // req object have body property
 app.use(express.urlencoded({ extended: false }))
 app.use(express.json())

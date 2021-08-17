@@ -1,6 +1,9 @@
 <%- include('includes/header.ejs') %>
 
 <div class="container py-md-5 container--narrow">
+
+  <%- include('includes/flash') %>
+
   <h2><img class="avatar-small" src="<%= avatar %>"> <%= username %>
     <form class="ml-2 d-inline" action="#" method="POST">
       <button class="btn btn-primary btn-sm">Follow <i class="fas fa-user-plus"></i></button>

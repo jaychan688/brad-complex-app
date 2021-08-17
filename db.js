@@ -7,10 +7,7 @@ const { MongoClient } = require('mongodb')
 
 MongoClient.connect(process.env.connectionString, function (err, client) {
 	module.exports = client
-
-	console.log(
-		`MongoDB connected: ${client.options.srvHost}`.cyan.bold.underline
-	)
+	console.log(`MongoDB connected: ${client.options.hosts}`.cyan.bold.underline)
 
 	const app = require('./app')
 	app.listen(

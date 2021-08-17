@@ -8,11 +8,13 @@ exports.create = (req, res) => {
 	const post = new Post(req.body, req.session.user._id)
 	post
 		.create()
-		.then(() => {
-			res.send('post ok!')
+		.then(newId => {
+			req.flash('success', 'New post successfully created.')
+			req.session.save(() => res.redirect(`/post/${newId}`))
 		})
 		.catch(errors => {
-			res.send(errors)
+			errors.forEach(error => req.flash('errors', error))
+			req.session.save(() => res.redirect('/create-post'))
 		})
 }
 
@@ -46,8 +48,16 @@ exports.viewSingle = async (req, res) => {
 exports.viewEditScreen = async (req, res) => {
 	try {
 		const post = await Post.findSingleById(req.params.id, req.visitorId)
-		const { _id: id, title, body } = post
-		res.render('edit-post', { id, title, body })
+		console.log(post)
+		if (post.authorId == req.visitorId) {
+			const { _id: id, title, body } = post
+			res.render('edit-post', { id, title, body })
+		} else {
+			req.flash('errors', 'You do not have permission to perform that action.')
+			req.session.save(() => {
+				res.redirect('/')
+			})
+		}
 	} catch {
 		res.render('404')
 	}
@@ -82,5 +92,29 @@ exports.edit = (req, res) => {
 			req.session.save(() => {
 				res.redirect('/')
 			})
+		})
+}
+
+exports.delete = (req, res) => {
+	Post.delete(req.params.id, req.visitorId)
+		.then(() => {
+			req.flash('success', 'Post successfully deleted.')
+			req.session.save(() =>
+				res.redirect(`/profile/${req.session.user.username}`)
+			)
+		})
+		.catch(() => {
+			req.flash('errors', 'You do not have permission to perform that action.')
+			req.session.save(() => res.redirect('/'))
+		})
+}
+
+exports.search = (req, res) => {
+	Post.search(req.body.searchTerm)
+		.then(posts => {
+			res.json(posts)
+		})
+		.catch(() => {
+			res.json([])
 		})
 }

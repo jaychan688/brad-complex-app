@@ -4,9 +4,9 @@
 	"description": "",
 	"main": "app.js",
 	"scripts": {
-		"server": "nodemon db --ignore frontend-js --ignore public/",
+		"server": "nodemon db --ignore frontend --ignore public/",
 		"client": "webpack --watch",
-		"start": "concurrently \"npm run server\" \"npm run client\""
+		"dev": "concurrently \"npm run server\" \"npm run client\""
 	},
 	"keywords": [],
 	"author": "",
@@ -31,10 +31,15 @@
 		"validator": "^13.6.0"
 	},
 	"devDependencies": {
+		"@babel/core": "^7.15.0",
+		"@babel/preset-env": "^7.15.0",
+		"babel-loader": "^8.2.2",
 		"colors": "^1.4.0",
 		"concurrently": "^6.2.1",
 		"dotenv": "^10.0.0",
 		"morgan": "^1.10.0",
-		"nodemon": "^2.0.12"
+		"nodemon": "^2.0.12",
+		"webpack": "^5.50.0",
+		"webpack-cli": "^4.8.0"
 	}
 }

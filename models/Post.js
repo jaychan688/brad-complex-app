@@ -42,10 +42,11 @@ Post.prototype.create = function () {
 				// save post into database
 				postsCollection
 					.insertOne(this.data)
-					.then(() => {
-						resolve()
+					.then(info => {
+						resolve(info.insertedId)
 					})
-					.catch(() => {
+					.catch(error => {
+						console.log(error)
 						// some sort of db or server problems
 						this.errors.push('Please try again later.')
 						reject(this.errors)
@@ -71,7 +72,8 @@ Post.prototype.update = function () {
 			} else {
 				reject()
 			}
-		} catch {
+		} catch (error) {
+			console.log(error)
 			reject()
 		}
 	})
@@ -97,7 +99,7 @@ Post.prototype.actuallyUpdate = function () {
 Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 	return new Promise(async (resolve, reject) => {
 		try {
-			const aggOperations = uniqueOperations.concat([
+			const basicOperation = [
 				{
 					$lookup: {
 						// from users collection
@@ -121,8 +123,16 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 						author: { $arrayElemAt: ['$authorDocument', 0] },
 					},
 				},
-			])
+			]
+			// FIX Mongodb aggregation failure: “FieldPath field names may not start with '$'.”
+			// use $project stage after $sort stage the score or text index field
+			// borough should be inclusion or an exclusion, to fix swap $project and $sort stage,
+			let aggOperations = [uniqueOperations[0], ...basicOperation]
 
+			if (uniqueOperations[1])
+				aggOperations = [...aggOperations, uniqueOperations[1]]
+
+			console.log(aggOperations)
 			// aggregate let us run multiple operation
 			// passing aggregate an array to perform database operation
 			let posts = await postsCollection.aggregate(aggOperations).toArray()
@@ -131,7 +141,8 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 			posts = posts.map(post => {
 				// return booleans
 				post.isVisitorOwner = post.authorId.equals(visitorId)
-				post.authorId = undefined
+				// FIXME: some bugs after create post
+				// post.authorId = undefined
 
 				post.author = {
 					username: post.author.username,
@@ -179,6 +190,44 @@ Post.findByAuthorId = function (authorId) {
 		{ $match: { author: authorId } },
 		{ $sort: { createdDate: -1 } },
 	])
+}
+
+Post.delete = function (postIdToDelete, currentUserId) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			const post = await Post.findSingleById(postIdToDelete, currentUserId)
+			if (post.isVisitorOwner) {
+				await postsCollection.deleteOne({ _id: new ObjectId(postIdToDelete) })
+				resolve()
+			} else {
+				reject()
+			}
+		} catch (error) {
+			console.log(error)
+		}
+	})
+}
+
+Post.search = function (searchTerm) {
+	return new Promise(async (resolve, reject) => {
+		try {
+			if (typeof searchTerm == 'string') {
+				const posts = await Post.reusablePostQuery([
+					// perform a text search, looking for anything that cantain searchTerm
+					// within it's value
+					{ $match: { $text: { $search: searchTerm } } },
+					// sort by score
+					{ $sort: { score: { $meta: 'textScore' } } },
+				])
+
+				resolve(posts)
+			} else {
+				reject()
+			}
+		} catch (error) {
+			console.log(error)
+		}
+	})
 }
 
 module.exports = Post
