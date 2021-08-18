@@ -64,10 +64,13 @@ Post.prototype.update = function () {
 	return new Promise(async (resolve, reject) => {
 		try {
 			const post = await Post.findSingleById(this.requestedPostId, this.userId)
+			// console.log(post.isVisitorOwner)
 
 			if (post.isVisitorOwner) {
 				// actually update the db
+				console.log('actually update the db')
 				const status = await this.actuallyUpdate()
+
 				resolve(status)
 			} else {
 				reject()
@@ -132,7 +135,6 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 			if (uniqueOperations[1])
 				aggOperations = [...aggOperations, uniqueOperations[1]]
 
-			console.log(aggOperations)
 			// aggregate let us run multiple operation
 			// passing aggregate an array to perform database operation
 			let posts = await postsCollection.aggregate(aggOperations).toArray()
@@ -142,7 +144,7 @@ Post.reusablePostQuery = function (uniqueOperations, visitorId) {
 				// return booleans
 				post.isVisitorOwner = post.authorId.equals(visitorId)
 				// FIXME: some bugs after create post
-				// post.authorId = undefined
+				post.authorId = undefined
 
 				post.author = {
 					username: post.author.username,
@@ -163,6 +165,7 @@ Post.findSingleById = function (postId, visitorId) {
 	return new Promise(async (resolve, reject) => {
 		try {
 			if (typeof postId != 'string' || !ObjectId.isValid(postId)) {
+				console.log('error here')
 				reject()
 				return
 			}
@@ -208,26 +211,22 @@ Post.delete = function (postIdToDelete, currentUserId) {
 	})
 }
 
-Post.search = function (searchTerm) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			if (typeof searchTerm == 'string') {
-				const posts = await Post.reusablePostQuery([
-					// perform a text search, looking for anything that cantain searchTerm
-					// within it's value
-					{ $match: { $text: { $search: searchTerm } } },
-					// sort by score
-					{ $sort: { score: { $meta: 'textScore' } } },
-				])
+Post.search = async searchTerm => {
+	try {
+		if (typeof searchTerm == 'string') {
+			const posts = await Post.reusablePostQuery([
+				// perform a text search, looking for anything that cantain searchTerm
+				// within it's value
+				{ $match: { $text: { $search: searchTerm } } },
+				// sort by score
+				{ $sort: { score: { $meta: 'textScore' } } },
+			])
 
-				resolve(posts)
-			} else {
-				reject()
-			}
-		} catch (error) {
-			console.log(error)
+			return posts
 		}
-	})
+	} catch (error) {
+		console.log(error)
+	}
 }
 
 module.exports = Post

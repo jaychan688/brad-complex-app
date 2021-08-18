@@ -21,7 +21,7 @@ exports.create = (req, res) => {
 exports.viewSingle = async (req, res) => {
 	try {
 		const post = await Post.findSingleById(req.params.id, req.visitorId)
-		// console.log(post)
+
 		const {
 			_id: id,
 			title,
@@ -48,8 +48,8 @@ exports.viewSingle = async (req, res) => {
 exports.viewEditScreen = async (req, res) => {
 	try {
 		const post = await Post.findSingleById(req.params.id, req.visitorId)
-		console.log(post)
-		if (post.authorId == req.visitorId) {
+
+		if (post.isVisitorOwner) {
 			const { _id: id, title, body } = post
 			res.render('edit-post', { id, title, body })
 		} else {
@@ -109,12 +109,12 @@ exports.delete = (req, res) => {
 		})
 }
 
-exports.search = (req, res) => {
-	Post.search(req.body.searchTerm)
-		.then(posts => {
-			res.json(posts)
-		})
-		.catch(() => {
-			res.json([])
-		})
+exports.search = async (req, res) => {
+	const posts = await Post.search(req.body.searchTerm)
+
+	if (posts) {
+		res.json(posts)
+	} else {
+		res.json([])
+	}
 }
