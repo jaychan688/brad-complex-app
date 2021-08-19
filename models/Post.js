@@ -1,6 +1,8 @@
-const postsCollection = require('../db').db().collection('posts')
-const ObjectId = require('mongodb').ObjectId
 const sanitizeHTML = require('sanitize-html')
+const ObjectId = require('mongodb').ObjectId
+
+const postsCollection = require('../db').db().collection('posts')
+const followsCollection = require('../db').db().collection('follows')
 const User = require('./User')
 
 const Post = function (data, userId, requestedPostId) {
@@ -224,6 +226,36 @@ Post.search = async searchTerm => {
 
 			return posts
 		}
+	} catch (error) {
+		console.log(error)
+	}
+}
+
+Post.countPostsByAuthor = async id => {
+	try {
+		const postCount = await postsCollection.countDocuments({ author: id })
+		return postCount
+	} catch (error) {
+		console.log(error)
+	}
+}
+
+Post.getFeed = async id => {
+	try {
+		// create an array of the user ids that the current user follows
+		let followedUsers = await followsCollection
+			.find({ authorId: new ObjectId(id) })
+			.toArray()
+
+		followedUsers = followedUsers.map(followDoc => {
+			return followDoc.followedId
+		})
+
+		// look for posts where the author is in the above array of followed users
+		return await Post.reusablePostQuery([
+			{ $match: { author: { $in: followedUsers } } },
+			{ $sort: { createdDate: -1 } },
+		])
 	} catch (error) {
 		console.log(error)
 	}
