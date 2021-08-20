@@ -233,8 +233,7 @@ Post.search = async searchTerm => {
 
 Post.countPostsByAuthor = async id => {
 	try {
-		const postCount = await postsCollection.countDocuments({ author: id })
-		return postCount
+		return postsCollection.countDocuments({ author: id })
 	} catch (error) {
 		console.log(error)
 	}

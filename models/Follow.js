@@ -49,41 +49,42 @@ Follow.prototype.validate = async function (action) {
 	}
 }
 
-Follow.prototype.create = function () {
-	return new Promise(async (resolve, reject) => {
+Follow.prototype.create = async function () {
+	try {
 		this.cleanUp()
 		await this.validate('create')
 
 		if (!this.errors.length) {
-			await followsCollection.insertOne({
+			return await followsCollection.insertOne({
 				followedId: this.followedId,
 				authorId: new ObjectId(this.authorId),
 			})
-			resolve()
 		} else {
-			reject(this.errors)
+			return this.errors
 		}
-	})
+	} catch (error) {
+		console.log(error)
+	}
 }
 
-Follow.prototype.delete = function () {
-	return new Promise(async (resolve, reject) => {
+Follow.prototype.delete = async function () {
+	try {
 		this.cleanUp()
 		await this.validate('delete')
 
 		if (!this.errors.length) {
-			await followsCollection.deleteOne({
+			return await followsCollection.deleteOne({
 				followedId: this.followedId,
 				authorId: new ObjectId(this.authorId),
 			})
-			resolve()
-		} else {
-			reject(this.errors)
 		}
-	})
+		return this.errors
+	} catch (error) {
+		console.log(error)
+	}
 }
 
-Follow.isVisitorFollowing = async function (followedId, visitorId) {
+Follow.isVisitorFollowing = async (followedId, visitorId) => {
 	const followDoc = await followsCollection.findOne({
 		followedId,
 		authorId: new ObjectId(visitorId),
@@ -96,85 +97,75 @@ Follow.isVisitorFollowing = async function (followedId, visitorId) {
 	}
 }
 
-Follow.getFollowersById = function (id) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			let followers = await followsCollection
-				.aggregate([
-					{ $match: { followedId: id } },
-					{
-						$lookup: {
-							from: 'users',
-							localField: 'authorId',
-							foreignField: '_id',
-							as: 'userDoc',
-						},
+Follow.getFollowersById = async id => {
+	try {
+		let followers = await followsCollection
+			.aggregate([
+				{ $match: { followedId: id } },
+				{
+					$lookup: {
+						from: 'users',
+						localField: 'authorId',
+						foreignField: '_id',
+						as: 'userDoc',
 					},
-					{
-						$project: {
-							username: { $arrayElemAt: ['$userDoc.username', 0] },
-							email: { $arrayElemAt: ['$userDoc.email', 0] },
-						},
+				},
+				{
+					$project: {
+						username: { $arrayElemAt: ['$userDoc.username', 0] },
+						email: { $arrayElemAt: ['$userDoc.email', 0] },
 					},
-				])
-				.toArray()
+				},
+			])
+			.toArray()
 
-			followers = followers.map(function (follower) {
-				const user = new User(follower, true)
-				return { username: follower.username, avatar: user.avatar }
-			})
-
-			resolve(followers)
-		} catch (error) {
-			console.log(error)
-			reject()
-		}
-	})
+		return followers.map(function (follower) {
+			const user = new User(follower, true)
+			return { username: follower.username, avatar: user.avatar }
+		})
+	} catch (error) {
+		console.log(error)
+		reject()
+	}
 }
 
-Follow.getFollowingById = function (id) {
-	return new Promise(async (resolve, reject) => {
-		try {
-			let followers = await followsCollection
-				.aggregate([
-					{ $match: { authorId: id } },
-					{
-						$lookup: {
-							from: 'users',
-							localField: 'followedId',
-							foreignField: '_id',
-							as: 'userDoc',
-						},
+Follow.getFollowingById = async id => {
+	try {
+		let followers = await followsCollection
+			.aggregate([
+				{ $match: { authorId: id } },
+				{
+					$lookup: {
+						from: 'users',
+						localField: 'followedId',
+						foreignField: '_id',
+						as: 'userDoc',
 					},
-					{
-						$project: {
-							username: { $arrayElemAt: ['$userDoc.username', 0] },
-							email: { $arrayElemAt: ['$userDoc.email', 0] },
-						},
+				},
+				{
+					$project: {
+						username: { $arrayElemAt: ['$userDoc.username', 0] },
+						email: { $arrayElemAt: ['$userDoc.email', 0] },
 					},
-				])
-				.toArray()
+				},
+			])
+			.toArray()
 
-			followers = followers.map(follower => {
-				const user = new User(follower, true)
-				return { username: follower.username, avatar: user.avatar }
-			})
-
-			resolve(followers)
-		} catch (error) {
-			console.log(error)
-			reject()
-		}
-	})
+		return followers.map(follower => {
+			const user = new User(follower, true)
+			return { username: follower.username, avatar: user.avatar }
+		})
+	} catch (error) {
+		console.log(error)
+		reject()
+	}
 }
 
 Follow.countFollowersById = async id => {
 	try {
-		const followerCount = await followsCollection.countDocuments({
+		return await followsCollection.countDocuments({
 			followedId: id,
 		})
-
-		return followerCount
 	} catch (error) {
 		console.log(error)
 	}
@@ -182,11 +173,9 @@ Follow.countFollowersById = async id => {
 
 Follow.countFollowingById = async id => {
 	try {
-		const count = await followsCollection.countDocuments({
+		return await followsCollection.countDocuments({
 			authorId: id,
 		})
-
-		return count
 	} catch (error) {
 		console.log(error)
 	}

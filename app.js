@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === 'development') {
 	app.use(morgan('dev'))
 }
 
-const sessionOption = session({
+const sessionMiddleware = session({
 	secret: 'random charset',
 	store: MongoStore.create({ client: require('./db') }),
 	resave: false,
@@ -25,8 +25,8 @@ const sessionOption = session({
 	cookie: { maxAge: 1000 * 60 * 60 * 24, httpOnly: true },
 })
 
-// req object have session property
-app.use(sessionOption)
+// register middleware in Express, req object have session property
+app.use(sessionMiddleware)
 app.use(flash())
 
 // Middle: run this function for every request
@@ -83,4 +83,37 @@ app.set('view engine', 'ejs')
 
 app.use('/', router)
 
-module.exports = app
+const server = require('http').createServer(app)
+const io = require('socket.io')(server)
+
+// register middleware in Socket.IO
+io.use((socket, next) => {
+	sessionMiddleware(socket.request, {}, next)
+	// sessionMiddleware(socket.request, socket.request.res, next);
+	// will not work with websocket-only connections, as 'socket.request.res'
+	// will be undefined in that case
+})
+
+// the parameter socket represents the connection between server and browser
+io.on('connection', socket => {
+	if (socket.request.session.user) {
+		const user = socket.request.session.user
+
+		socket.emit('welcome', { username: user.username, avatar: user.avatar })
+
+		// the chatMessageFromBrowser event are created in fontend,
+		// we can create as many different types of events as we want
+		socket.on('chatMessageFromBrowser', data => {
+			socket.broadcast.emit('chatMessageFromServer', {
+				message: sanitizeHTML(data.message, {
+					allowedTags: [],
+					allowedAttributes: {},
+				}),
+				username: user.username,
+				avatar: user.avatar,
+			})
+		})
+	}
+})
+
+module.exports = server

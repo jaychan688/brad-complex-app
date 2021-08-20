@@ -1,36 +1,36 @@
 const Follow = require('../models/Follow')
 
-exports.addFollow = (req, res) => {
+exports.addFollow = async (req, res) => {
 	const follow = new Follow(req.params.username, req.visitorId)
-	follow
-		.create()
-		.then(() => {
-			req.flash('success', `Successfully followed ${req.params.username}`)
-			req.session.save(() => res.redirect(`/profile/${req.params.username}`))
+
+	const results = await follow.create()
+
+	if (results.insertedId) {
+		req.flash('success', `Successfully followed ${req.params.username}`)
+		req.session.save(() => res.redirect(`/profile/${req.params.username}`))
+	} else {
+		results.forEach(error => {
+			req.flash('errors', error)
 		})
-		.catch(errors => {
-			errors.forEach(error => {
-				req.flash('errors', error)
-			})
-			req.session.save(() => res.redirect('/'))
-		})
+		req.session.save(() => res.redirect('/'))
+	}
 }
 
-exports.removeFollow = (req, res) => {
+exports.removeFollow = async (req, res) => {
 	const follow = new Follow(req.params.username, req.visitorId)
-	follow
-		.delete()
-		.then(() => {
-			req.flash(
-				'success',
-				`Successfully stopped following ${req.params.username}`
-			)
-			req.session.save(() => res.redirect(`/profile/${req.params.username}`))
+
+	const results = await follow.delete()
+
+	if (results.deletedCount) {
+		req.flash(
+			'success',
+			`Successfully stopped following ${req.params.username}`
+		)
+		req.session.save(() => res.redirect(`/profile/${req.params.username}`))
+	} else {
+		results.forEach(error => {
+			req.flash('errors', error)
 		})
-		.catch(errors => {
-			errors.forEach(error => {
-				req.flash('errors', error)
-			})
-			req.session.save(() => res.redirect('/'))
-		})
+		req.session.save(() => res.redirect('/'))
+	}
 }
