@@ -6,6 +6,7 @@ const dotenv = require('dotenv')
 const morgan = require('morgan')
 const sanitizeHTML = require('sanitize-html')
 const markdown = require('marked')
+const csrf = require('csurf')
 
 const router = require('./router')
 
@@ -81,7 +82,26 @@ app.set('views', 'views')
 // Set template engine
 app.set('view engine', 'ejs')
 
+// Cookie Security, Cross site request forgery (csrf)
+app.use(csrf())
+
+app.use((req, res, next) => {
+	res.locals.csrfToken = req.csrfToken()
+	next()
+})
+
 app.use('/', router)
+
+app.use((err, req, res, next) => {
+	if (err) {
+		if (err.code == 'EBADCSRFTOKEN') {
+			req.flash('errors', 'Cross site request forgery detected.')
+			req.session.save(() => res.redirect('/'))
+		} else {
+			res.render('404')
+		}
+	}
+})
 
 const server = require('http').createServer(app)
 const io = require('socket.io')(server)
