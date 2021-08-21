@@ -1,6 +1,7 @@
 const User = require('../models/User')
 const Post = require('../models/Post')
 const Follow = require('../models/Follow')
+const jwt = require('jsonwebtoken')
 
 exports.mustBeLoggedIn = (req, res, next) => {
 	if (req.session.user) {
@@ -197,4 +198,54 @@ exports.profileFollowingScreen = async (req, res) => {
 		console.log(error)
 		res.render('404')
 	}
+}
+
+exports.apiGetPostsByUsername = async (req, res) => {
+	try {
+		const authorDoc = await User.findByUsername(req.params.username)
+		const posts = await Post.findByAuthorId(authorDoc._id)
+		res.json(posts)
+	} catch {
+		res.json('Sorry, invalid user requested.')
+	}
+}
+
+exports.apiLogin = (req, res) => {
+	let user = new User(req.body)
+	user
+		.login()
+		.then(result => {
+			res.json(
+				jwt.sign({ _id: user.data._id }, process.env.JWTSECRET, {
+					expiresIn: '7d',
+				})
+			)
+		})
+		.catch(e => {
+			res.json('Sorry, your values are not correct.')
+		})
+}
+
+exports.apiMustBeLoggedIn = (req, res, next) => {
+	try {
+		req.apiUser = jwt.verify(req.body.token, process.env.JWTSECRET)
+		next()
+	} catch {
+		res.json('Sorry, you must provide a valid token.')
+	}
+}
+
+exports.doesUsernameExist = (req, res) => {
+	User.findByUsername(req.body.username)
+		.then(() => {
+			res.json(true)
+		})
+		.catch(() => {
+			res.json(false)
+		})
+}
+
+exports.doesEmailExist = async (req, res) => {
+	const emailBool = await User.doesEmailExist(req.body.email)
+	res.json(emailBool)
 }

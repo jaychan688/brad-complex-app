@@ -34,14 +34,14 @@ export default class Chat {
 		this.chatLog.insertAdjacentHTML(
 			'beforeend',
 			DOMPurify.sanitize(`
-    <div class="chat-self">
-        <div class="chat-message">
-          <div class="chat-message-inner">
-            ${this.chatField.value}
-          </div>
-        </div>
-        <img class="chat-avatar avatar-tiny" src="${this.avatar}">
-      </div>
+			<div class="chat-self">
+				<div class="chat-message">
+					<div class="chat-message-inner">
+						${this.chatField.value}
+					</div>
+				</div>
+				<img class="chat-avatar avatar-tiny" src="${this.avatar}">
+			</div>
     `)
 		)
 
