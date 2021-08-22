@@ -1,0 +1,28 @@
+POST http://localhost:3000/api/login
+content-type: application/json
+
+{
+    "username": "jay",
+    "password": "jay12345"
+}
+
+### Create Post
+POST http://localhost:3000/api/post
+content-type: application/json
+
+{
+    "title": "api call to create post",
+    "body":"api test body",
+    "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MTFhZjdjYmZjYzI4YzI3MmM4NTQ3NjAiLCJpYXQiOjE2Mjk1OTUzNjIsImV4cCI6MTYzMDIwMDE2Mn0.mxK7AU7_yl-AWnXgYyatqEcbsf4YfsSe_G-VBHJ9cVc"
+}
+
+### Delete Post
+DELETE http://localhost:3000/api/post/6121a8c18cfcb682ec2b2f5b
+content-type: application/json
+
+{
+    "token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MTFhZjdjYmZjYzI4YzI3MmM4NTQ3NjAiLCJpYXQiOjE2Mjk1OTUzNjIsImV4cCI6MTYzMDIwMDE2Mn0.mxK7AU7_yl-AWnXgYyatqEcbsf4YfsSe_G-VBHJ9cVc"
+}
+
+###
+GET http://localhost:3000/api/postsByAuthor/jay

@@ -12,6 +12,12 @@ const router = require('./router')
 
 const app = express()
 
+// req object have body property
+app.use(express.urlencoded({ extended: false }))
+app.use(express.json())
+
+app.use('/api', require('./router-api'))
+
 dotenv.config()
 // Dev logging middleware
 if (process.env.NODE_ENV === 'development') {
@@ -70,10 +76,6 @@ app.use((req, res, next) => {
 	res.locals.user = req.session.user
 	next()
 })
-
-// req object have body property
-app.use(express.urlencoded({ extended: false }))
-app.use(express.json())
 
 // It serves static files and is based on serve-static.
 app.use(express.static('public'))

@@ -118,3 +118,25 @@ exports.search = async (req, res) => {
 		res.json([])
 	}
 }
+
+exports.apiCreate = (req, res) => {
+	const post = new Post(req.body, req.apiUser._id)
+	post
+		.create()
+		.then(newId => {
+			res.json({ newId, msg: 'success' })
+		})
+		.catch(errors => {
+			res.json(errors)
+		})
+}
+
+exports.apiDelete = (req, res) => {
+	Post.delete(req.params.id, req.apiUser._id)
+		.then(() => {
+			res.json('Delete Success')
+		})
+		.catch(() => {
+			res.json('You do not have permission to perform that action.')
+		})
+}

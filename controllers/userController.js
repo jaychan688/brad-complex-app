@@ -16,7 +16,6 @@ exports.mustBeLoggedIn = (req, res, next) => {
 
 exports.login = (req, res) => {
 	const user = new User(req.body)
-
 	user
 		.login()
 		.then(() => {
@@ -200,18 +199,8 @@ exports.profileFollowingScreen = async (req, res) => {
 	}
 }
 
-exports.apiGetPostsByUsername = async (req, res) => {
-	try {
-		const authorDoc = await User.findByUsername(req.params.username)
-		const posts = await Post.findByAuthorId(authorDoc._id)
-		res.json(posts)
-	} catch {
-		res.json('Sorry, invalid user requested.')
-	}
-}
-
 exports.apiLogin = (req, res) => {
-	let user = new User(req.body)
+	const user = new User(req.body)
 	user
 		.login()
 		.then(result => {
@@ -222,6 +211,7 @@ exports.apiLogin = (req, res) => {
 			)
 		})
 		.catch(e => {
+			console.log(e)
 			res.json('Sorry, your values are not correct.')
 		})
 }
@@ -235,6 +225,17 @@ exports.apiMustBeLoggedIn = (req, res, next) => {
 	}
 }
 
+exports.apiGetPostsByUsername = async (req, res) => {
+	try {
+		const authorDoc = await User.findByUsername(req.params.username)
+		const posts = await Post.findByAuthorId(authorDoc._id)
+		res.json(posts)
+	} catch {
+		res.json('Sorry, invalid user requested.')
+	}
+}
+
+// Frontend ajax call to check username and email
 exports.doesUsernameExist = (req, res) => {
 	User.findByUsername(req.body.username)
 		.then(() => {
